@@ -85,7 +85,7 @@ func readBook(fin *os.File) [][][]string {
 			chars := []rune(line)
 			word := []rune{}
 			for _, r := range chars {
-				if unicode.IsLetter(r) || r == '\'' {
+				if unicode.IsLetter(r) || (len(word) != 0 && r == '\'') {
 					word = append(word, r)
 				} else {
 					if len(word) != 0 {

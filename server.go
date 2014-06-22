@@ -119,7 +119,7 @@ func (c chapterHandler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 	book := c.books[rand.Intn(len(c.books))]
 	chapterCount = min(chapterCount, c.maxChapters, len(book))
 
-	startChapter := rand.Intn(min(len(book)-chapterCount, 1))
+	startChapter := rand.Intn(max(len(book)-chapterCount, 1))
 	chapters := book[startChapter : startChapter+chapterCount]
 	w.Header().Set("Content-Type", "application/json")
 	json.NewEncoder(w).Encode(chapters)
@@ -151,12 +151,12 @@ func (p paragraphHandler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 	chapter := rand.Intn(maxChapter)
 	paragraph := rand.Intn(len(book[chapter]))
 	for len(paragraphs) < paragraphCount {
-		if chapter >= len(book) {
-			break
-		}
 		if paragraph >= len(book[chapter]) {
 			chapter++
 			paragraph = 0
+		}
+		if chapter >= len(book) {
+			break
 		}
 
 		paragraphsToAdd := min(
@@ -167,6 +167,7 @@ func (p paragraphHandler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 			paragraphs,
 			book[chapter][paragraph:paragraph+paragraphsToAdd]...,
 		)
+		paragraph += paragraphsToAdd
 	}
 	w.Header().Set("Content-Type", "application/json")
 	json.NewEncoder(w).Encode(paragraphs)
