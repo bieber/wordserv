@@ -98,7 +98,14 @@ func readBook(fin *os.File) [][][]string {
 					}
 				}
 			}
+			if len(word) != 0 {
+				words = append(words, string(word))
+				word = []rune{}
+			}
 		}
+	}
+	if len(words) > 0 {
+		paragraphs = append(paragraphs, words)
 	}
 	if len(paragraphs) > 0 {
 		chapters = append(chapters, paragraphs)
