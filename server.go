@@ -127,6 +127,7 @@ func (c chapterHandler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 
 	startChapter := rand.Intn(max(len(book)-chapterCount, 1))
 	chapters := book[startChapter : startChapter+chapterCount]
+	w.Header().Set("Access-Control-Allow-Origin", "*")
 	w.Header().Set("Content-Type", "application/json")
 	json.NewEncoder(w).Encode(chapters)
 }
@@ -175,6 +176,7 @@ func (p paragraphHandler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 		)
 		paragraph += paragraphsToAdd
 	}
+	w.Header().Set("Access-Control-Allow-Origin", "*")
 	w.Header().Set("Content-Type", "application/json")
 	json.NewEncoder(w).Encode(paragraphs)
 }
@@ -227,6 +229,7 @@ func (w wordHandler) ServeHTTP(rw http.ResponseWriter, r *http.Request) {
 			break
 		}
 	}
+	rw.Header().Set("Access-Control-Allow-Origin", "*")
 	rw.Header().Set("Content-Type", "application/json")
 	json.NewEncoder(rw).Encode(words)
 }
