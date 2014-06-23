@@ -25,6 +25,7 @@ import (
 	"net/http"
 	"regexp"
 	"strconv"
+	"unicode"
 )
 
 type chapterHandler struct {
@@ -38,8 +39,9 @@ type paragraphHandler struct {
 }
 
 type wordHandler struct {
-	maxWords int
-	books    [][][][]string
+	maxWords   int
+	books      [][][][]string
+	wordCounts [][]int
 }
 
 func startServer(books [][][][]string, config *Config) error {
@@ -54,7 +56,11 @@ func startServer(books [][][][]string, config *Config) error {
 	)
 	http.Handle(
 		"/words/",
-		&wordHandler{maxWords: config.MaxWords, books: books},
+		&wordHandler{
+			maxWords: config.MaxWords,
+			books: books,
+			wordCounts: countWords(books),
+		},
 	)
 	return http.ListenAndServe(fmt.Sprintf(":%d", config.Port), nil)
 }
@@ -184,13 +190,13 @@ func (w wordHandler) ServeHTTP(rw http.ResponseWriter, r *http.Request) {
 	wordCount, _ := strconv.Atoi(matches[1])
 	wordCount = min(wordCount, w.maxWords)
 
-	book := w.books[rand.Intn(len(w.books))]
+	i := rand.Intn(len(w.books))
+	book := w.books[i]
+	wordCounts := w.wordCounts[i]
 	wordsCounted := 0
 	maxChapter := 0
 	for maxChapter = len(book) - 1; maxChapter >= 0; maxChapter-- {
-		for _, c := range book[maxChapter] {
-			wordsCounted += len(c)
-		}
+		wordsCounted += wordCounts[i]
 		if wordsCounted >= wordCount {
 			break
 		}
@@ -198,26 +204,28 @@ func (w wordHandler) ServeHTTP(rw http.ResponseWriter, r *http.Request) {
 	maxChapter = max(maxChapter, 1)
 
 	words := []string{}
+	wordsCounted = 0
 	chapter := rand.Intn(maxChapter)
 	paragraph := rand.Intn(len(book[chapter]))
-	for len(words) < wordCount {
-		if chapter >= len(book) {
-			break
+	word := 0
+	for wordsCounted < wordCount {
+		words = append(words, book[chapter][paragraph][word])
+		if unicode.IsLetter([]rune(book[chapter][paragraph][word])[0]) {
+			wordsCounted++
+		}
+
+		word++
+		if word >= len(book[chapter][paragraph]) {
+			word = 0
+			paragraph++
 		}
 		if paragraph >= len(book[chapter]) {
 			paragraph = 0
 			chapter++
 		}
-
-		wordsToAdd := min(
-			wordCount-len(words),
-			len(book[chapter][paragraph]),
-		)
-		words = append(
-			words,
-			book[chapter][paragraph][0:wordsToAdd]...,
-		)
-		chapter++
+		if chapter >= len(book) {
+			break
+		}
 	}
 	rw.Header().Set("Content-Type", "application/json")
 	json.NewEncoder(rw).Encode(words)

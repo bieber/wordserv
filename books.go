@@ -112,3 +112,23 @@ func readBook(fin *os.File) [][][]string {
 	}
 	return chapters
 }
+
+func countWords(books [][][][]string) [][]int {
+	bookCounts := [][]int{}
+	for _, book := range books {
+		chapterCounts := []int{}
+		for _, chapter := range book {
+			count := 0
+			for _, paragraph := range chapter {
+				for _, word := range paragraph {
+					if unicode.IsLetter([]rune(word)[0]) {
+						count++
+					}
+				}
+			}
+			chapterCounts = append(chapterCounts, count)
+		}
+		bookCounts = append(bookCounts, chapterCounts)
+	}
+	return bookCounts
+}
