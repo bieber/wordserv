@@ -44,6 +44,12 @@ type wordHandler struct {
 	wordCounts [][]int
 }
 
+type limitsHandler struct {
+	maxChapters   int
+	maxParagraphs int
+	maxWords      int
+}
+
 func startServer(books [][][][]string, config *Config) error {
 	http.HandleFunc("/", indexHandler)
 	http.Handle(
@@ -57,9 +63,17 @@ func startServer(books [][][][]string, config *Config) error {
 	http.Handle(
 		"/words/",
 		&wordHandler{
-			maxWords: config.MaxWords,
-			books: books,
+			maxWords:   config.MaxWords,
+			books:      books,
 			wordCounts: countWords(books),
+		},
+	)
+	http.Handle(
+		"/limits/",
+		&limitsHandler{
+			maxChapters:   config.MaxChapters,
+			maxParagraphs: config.MaxParagraphs,
+			maxWords:      config.MaxWords,
 		},
 	)
 	return http.ListenAndServe(fmt.Sprintf(":%d", config.Port), nil)
@@ -93,6 +107,12 @@ func indexHandler(w http.ResponseWriter, r *http.Request) {
             paragraph.  For <tt>chapters</tt> requests, it will be a list of
             lists of lists, where the outer-most sublists are chapters and the
             inner-most sublists are paragraphs.
+        </p>
+        <p>
+            The server imposes a maximum count for each type of request, beyond
+            which it will not return any more items.  To retrieve the maximum
+            number of chapters, paragraphs, and words, send a GET request to
+            <tt>/limits/</tt>.
         </p>
         <p>
             <strong>
@@ -220,6 +240,7 @@ func (w wordHandler) ServeHTTP(rw http.ResponseWriter, r *http.Request) {
 		if word >= len(book[chapter][paragraph]) {
 			word = 0
 			paragraph++
+			words = append(words, "\n")
 		}
 		if paragraph >= len(book[chapter]) {
 			paragraph = 0
@@ -232,4 +253,15 @@ func (w wordHandler) ServeHTTP(rw http.ResponseWriter, r *http.Request) {
 	rw.Header().Set("Access-Control-Allow-Origin", "*")
 	rw.Header().Set("Content-Type", "application/json")
 	json.NewEncoder(rw).Encode(words)
+}
+
+func (l limitsHandler) ServeHTTP(rw http.ResponseWriter, r *http.Request) {
+	limitsMap := map[string]int{
+		"chapters":   l.maxChapters,
+		"paragraphs": l.maxParagraphs,
+		"words":      l.maxWords,
+	}
+	rw.Header().Set("Access-Control-Allow-Origin", "*")
+	rw.Header().Set("Content-Type", "application/json")
+	json.NewEncoder(rw).Encode(limitsMap)
 }
