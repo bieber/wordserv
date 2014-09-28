@@ -46,8 +46,12 @@ func main() {
 	if err != nil {
 		log.Fatal(err)
 	}
+
 	confReader.Field("BookDir").
 		Required()
+	confReader.ConfigFileLongFlag("config-file")
+	confReader.ConfigFileShortFlag('c')
+
 	_, err = confReader.Read()
 	if err != nil {
 		log.Fatal(err)
