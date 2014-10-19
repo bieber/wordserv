@@ -27,6 +27,13 @@ import (
 	"unicode"
 )
 
+var replacementPunctuation = map[rune]rune {
+	'‘': '\'',
+	'’': '\'',
+	'“': '"',
+	'”': '"',
+}
+
 func loadBooks(basePath string) ([][][][]string, error) {
 	files, err := ioutil.ReadDir(basePath)
 	if err != nil {
@@ -85,7 +92,12 @@ func readBook(fin *os.File) [][][]string {
 			chars := []rune(line)
 			word := []rune{}
 			for _, r := range chars {
-				if unicode.IsLetter(r) || (len(word) != 0 && r == '\'') {
+				if replacement, ok := replacementPunctuation[r]; ok {
+					r = replacement
+				}
+
+				isAlnum := unicode.IsLetter(r) || unicode.IsDigit(r)
+				if isAlnum || (len(word) != 0 && r == '\'') {
 					word = append(word, r)
 				} else {
 					if len(word) != 0 {
