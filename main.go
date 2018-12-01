@@ -19,7 +19,7 @@
 package main
 
 import (
-	"github.com/bieber/conflag"
+	"github.com/spf13/viper"
 	"log"
 	"math/rand"
 	"time"
@@ -35,26 +35,32 @@ type Config struct {
 }
 
 func main() {
+	viper.SetDefault("port", 80)
+	viper.SetDefault("max_words", 5000)
+	viper.SetDefault("max_paragraphs", 50)
+	viper.SetDefault("max_chapters", 3)
+
+	viper.BindEnv("port")
+	viper.BindEnv("max_characters")
+	viper.BindEnv("max_paragraphs")
+	viper.BindEnv("max_chapters")
+	viper.BindEnv("book_dir")
+
+	viper.SetConfigName("config")
+	viper.AddConfigPath(".")
+	viper.AddConfigPath("./config")
+	viper.AddConfigPath("/run/secrets")
+	err := viper.ReadInConfig()
+	if err != nil {
+		log.Printf("Couldn't load config file: %s", err.Error())
+	}
+
 	config := Config{
-		Port:          80,
-		MaxWords:      5000,
-		MaxParagraphs: 50,
-		MaxChapters:   3,
-	}
-
-	confReader, err := conflag.New(&config)
-	if err != nil {
-		log.Fatal(err)
-	}
-
-	confReader.Field("BookDir").
-		Required()
-	confReader.ConfigFileLongFlag("config-file")
-	confReader.ConfigFileShortFlag('c')
-
-	_, err = confReader.Read()
-	if err != nil {
-		log.Fatal(err)
+		Port:          viper.GetInt("port"),
+		MaxWords:      viper.GetInt("max_words"),
+		MaxParagraphs: viper.GetInt("max_paragraphs"),
+		MaxChapters:   viper.GetInt("max_chapters"),
+		BookDir:       viper.GetString("book_dir"),
 	}
 
 	books, err := loadBooks(config.BookDir)
